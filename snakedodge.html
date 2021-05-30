@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+
+	<style>
+		h1{
+			position:  absolute;
+			top:  2%;
+			left: 30%;
+		}
+		body{
+		background-image: url('back.jpg');
+	}
+	
+	</style>
+
+<head>
+	<title>Snake Game</title>
+	<h1>Dodge the Blocks!</h1>
+</head>
+
+	<body>
+	<div id="score">Score: 0</div>
+	<canvas id="snakeboard" width="400" height="400" ></canvas>
+
+	<style>
+
+	#score{
+		position:  absolute;
+		top:  15%;
+		left: 35%;
+
+	}
+	#snakeboard{
+		position: absolute;
+		top:  50%;
+		left: 50%;
+		transform:  translate(-50%,-50%);
+
+	}
+</style>
+</body>
+
+<script>
+	const board_border='black';
+	const board_background='green';
+	const snake_col='lightblue';
+	const snake_border='darkblue';
+
+	let snake=[{x:200,y:200}];
+	let score=0;
+	let food_x;
+	let food_y;
+	let dx=10;
+	let dy=0; 
+	let speed=0;
+	let blocks=[];
+	let frequency=30;
+
+	const snakeboard=document.getElementById("snakeboard");
+	const snakeboard_ctx=snakeboard.getContext("2d");
+	
+	gen_snake(7);
+	main();
+	gen_block();
+	document.addEventListener("keydown",change_direction);
+
+	function gen_snake(len){
+		for(let j=1;j<len;j++){
+			s={x:snake[0].x-j*10,y:snake[0].y};
+			snake.push(s);
+		}
+	}
+
+	function main(){
+
+		if(has_game_ended()){
+			document.getElementById('score').innerHTML="GAME OVER! SCORE: "+score;
+			return;
+		}
+
+		if(score===30)
+			speed=10;
+		else if(score===50)
+			speed=30;
+		else if(score===100)
+			speed=50;
+		else if(score===150)
+			speed=60;
+		else if(score===200)
+			speed=70;
+		else if(score===300)
+			speed=80;
+
+		if(!(score%frequency))
+			gen_block();
+
+		setTimeout(function onTick(){
+			clear_board();
+			drawblocks();
+			move_snake();
+			drawSnake();
+			main();
+		},100-speed)
+	}
+
+	function is_knocked(){
+		for (var b of blocks){
+			for(var s of snake){
+				if(s.x===b.x&&s.y===b.y){
+					console.log("Knocked");
+					return true;
+				}
+		}
+	}
+}
+	function has_game_ended(){
+		for(let i=4;i<snake.length;i++){
+			if(snake[i].x===snake[0].x&&snake[i].y===snake[0].y)				
+				return true;
+		}
+
+		const knocked=is_knocked();
+		if(!knocked){
+			score+=1;
+			document.getElementById('score').innerHTML="Score: "+score;
+			snake.pop();
+		}else 
+			return true;
+			
+
+		const hitLeftWall=snake[0].x<0;
+		const hitRightWall=snake[0].x>snakeboard.width-10;
+		const hitTopWall=snake[0].y<0;
+		const hitBottomWall=snake[0].y>snakeboard.height-10;
+		return hitLeftWall||hitRightWall||hitTopWall||hitBottomWall;
+	}
+
+	function clear_board(){
+		snakeboard_ctx.fillStyle=board_background;
+		snakeboard_ctx.strokestyle=board_border;
+		snakeboard_ctx.fillRect(0,0,snakeboard.width,snakeboard.height);
+		snakeboard_ctx.strokeRect(0,0,snakeboard.width,snakeboard.height);
+	}
+	function drawSnakePart(snakePart){
+		snakeboard_ctx.fillStyle=snake_col;
+		snakeboard_ctx.strokestyle=snake_border;
+		snakeboard_ctx.fillRect(snakePart.x,snakePart.y,10,10);
+		snakeboard_ctx.strokeRect(snakePart.x,snakePart.y,10,10);
+	}
+	function drawSnake(){
+		snake.forEach(drawSnakePart);
+	}
+
+
+	function move_snake(){
+		const head={ x: snake[0].x+dx,y:snake[0].y+dy};
+		snake.unshift(head);
+
+	}
+
+	function rand_pos(min,max){
+		return Math.round((Math.random()*(max-min)+min)/10)*10;
+	}
+
+	function gen_block(){
+		block_x=rand_pos(0,snakeboard.width-10);
+		block_y=rand_pos(0,snakeboard.height-10);
+		block={x: block_x,y: block_y};
+		snake.forEach(function collapse(part){
+			const col=part===block;
+			if(col)
+				gen_block();
+		})
+
+		blocks.forEach(function duplicate(part){
+			const dup=part===block;
+			if(dup)
+				gen_block();
+		})
+		blocks.push(block);
+		
+	}
+
+	function drawblock(block){
+		snakeboard_ctx.fillStyle='black';
+		snakeboard_ctx.strokestyle='black';
+		snakeboard_ctx.fillRect(block.x,block.y,10,10);
+		snakeboard_ctx.strokeRect(block.x,block.y,10,10);
+	}
+
+	function drawblocks(){
+		blocks.forEach(drawblock);
+	}
+
+	function change_direction(event){
+		const LEFT_KEY=37;
+		const RIGHT_KEY=39;
+		const UP_KEY=38;
+		const DOWN_KEY=40;
+
+		const keyPressed=event.keyCode;
+		const goingUp=dy===-10;
+		const goingDown=dy===10;
+		const goingRight=dx===10;
+		const goingLeft=dx===-10;
+
+		switch(keyPressed){
+			case LEFT_KEY:
+				if(!goingRight){
+					dx=-10;
+					dy=0;
+				}
+				break;
+			case RIGHT_KEY:
+				if(!goingLeft){
+					dx=10;
+					dy=0;
+				}
+				break;
+			case UP_KEY:
+				if(!goingDown){
+					dx=0;
+					dy=-10;
+				}
+				break;
+			case DOWN_KEY:
+				if(!goingUp){
+					dx=0;
+					dy=10;
+				}
+		}
+	}
+
+</script>
+</html>
